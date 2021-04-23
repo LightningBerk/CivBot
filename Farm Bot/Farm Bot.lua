@@ -17,17 +17,92 @@ local startX = x --Grabs the players starting x position (Should be the leftmost
 local breakX = 0 --For saving x position of player when leaving to deopt in a chest
 local breakZ = 0 --For saving z position of player when leaving to deopt in a chest
 local chestSizeRaw = 0 --Numerical value for chest size
+local hasConfig = false --For tracking weather or not the user has a config file
+local wheat = "minecraft:wheat"
+local wheatSeeds = "minecraft:wheat_seeds"
+local carrots = "minecraft:carrot"
+local potatoes = "minecraft:potato"
+local beets = "minecraft:beetroot"
+local beetSeeds = "minecraft:beetroot_seeds"
+local wart = "minecraft:nether_wart"
+local crop = nil
+local seeds = nil
 --Defining functions
+function chooseCrop()
+	local cropChoice = nil
+	while true do
+		cropChoice = prompt("What are you harvesting? (w for wheat, c for carrots, p for potatoes, b for beets, and w for, nether wart)")
+		if cropChoice == "w" then
+			crop = wheat
+			seeds = wheatSeeds
+			break
+		elseif cropChoice == "c" then
+			crop = carrots
+			seeds = carrots
+			break
+		elseif cropChoice == "p" then
+			crop = potatoes
+			seeds = potatoes
+			break
+		elseif cropChoice == "b" then
+			crop = beets
+			seeds = beetSeeds
+			break
+		elseif cropChoice == "w" then
+			crop = wart
+			seeds = wart
+			break
+		else
+			log("&4Invalid selection, please choose a letter from the list")
+			sleep(500)
+		end
+	end	
+end
+function file_exists(file) --Checks to see if we have a config file 
+	local f = io.open(file, "rb")
+  	if f then
+  		hasConfig = true 
+  		f:close() 
+ 	else
+  		log("No config file found. One will be created after data has been entered")
+  	end
+end
+function createConfig() --Makes a config file assuming we dont have one
+	if hasConfig == false then
+		local file = io.open("config.txt", "w")
+		file:write(endX, "\n")
+		file:write(endZ, "\n")
+		file:write(chestX, "\n")
+		file:write(chestZ, "\n")
+		file:write(chestSizeRaw, "\n")
+		file:close()
+		sleep(2000)
+		log("Config file created")
+	end
+end
+function readConfig(file) --Reads the config file and plugs the data into their respective variables
+	local file = io.open(file, "r")
+	endX = file:read("*line")
+	endZ = file:read("*line")
+	chestX = file:read("*line")
+	chestZ = file:read("*line")
+	chestSizeRaw = file:read("*line")
+	endX = tonumber(endX)
+	endZ = tonumber(endZ)
+	chestX = tonumber(chestX)
+	chestZ = tonumber(chestZ)
+	chestSizeRaw = tonumber(chestSizeRaw)
+	file:close()
+end
 function chestDepot(cx, cz, cs) --Goes to pre-determined chest location and deposits crops
 	walkToward(cx - 1, cz, false)
 	look(-90, 50)
 	sleep(500)
-	depositItems("minecraft:wheat", cs) --Deposits all wheat into the chest
+	depositItems(crop, cs) --Deposits all crops into the chest
 end
 function checkInv()
 	invSpace = getInvSpace() --Gets players inventory space
 	invSpace = tonumber(invSpace) --Converting string value to interger
-	log(invSpace)
 	if invSpace <= 1 then
 		x, y, z = getPlayerBlockPos()
 		breakX = x --Grabs our position before going to deposit at chest
@@ -37,12 +112,12 @@ function checkInv()
 		walkToward(breakX, breakZ, false) --Walks back to where we left off
 		look(-90, 90)
 	end
-end
-function harvest()
+end 
+function harvest(whatSeeds)
 	x, y, z = getPlayerBlockPos()
 	harvestLineB(endX, z, -90, 90, "forward", 1) --Walks forward while breaking crops
 	x, y, z = getPlayerBlockPos() --Updating player position
-	plantLine(90, startX, z, "minecraft:wheat_seeds", 1) --Walks back along the row and replants
+	plantLine(90, startX, z, whatSeeds, 1) --Walks back along the row and replants
 	x, y, z = getPlayerBlockPos()
 	walkToward(x, z + 1, false) --Moves us one block to the right
 	sleep(500)
@@ -60,17 +135,17 @@ function waitUntil(key)
 end
 function giveDirections()
 	--Giving player directions 
-	log("Hello! This script was made by LightningBerk with modules from TheOrangeWizard")
+	log("&2Hello! This script was made by LightningBerk with modules from TheOrangeWizard")
 	sleep(1000)
-	log("There are a few directions you need to follow for this script to work correctly, so please pay attention")
+	log("&2There are a few directions you need to follow for this script to work correctly, so please pay attention")
 	sleep(1000)
-	log("If you farm is big enough to fill an inventory, you will need a dump chest. Lucky for you, this script supports automatic crop depositing!")
+	log("&2If you farm is big enough to fill an inventory, you will need a dump chest. Lucky for you, this script supports automatic crop depositing!")
 	sleep(1000)
-	log("Please stand at the bottom left corner of your farm facing positive x (East). Press TAB once you are there")
+	log("&4Please stand at the bottom left corner of your farm facing positive x (East). Press TAB once you are there")
 	waitUntil("TAB")
-	log("Now that you are orintated correctly, the rest of this will be very simple")
+	log("&2Now that you are orintated correctly, the rest of this will be very simple")
 	sleep(1000) 
-	log("Please place a single or double chest in the top left corner of your farm (Not including farmland). Once you have placed the chest, hit tab")
+	log("&4Please place a single or double chest in the top left corner of your farm (Not including farmland). Once you have placed the chest, hit tab")
 	waitUntil("TAB")
 end
 function getChestInfo()
@@ -93,8 +168,7 @@ function getChestInfo()
 	chestX = tonumber(chestX)
 	chestZ = tonumber(chestZ)
 end
-function harvestCrops()
-	sleep(2000)
+function getFarmInfo()
 	--Gathering information of farm from player
 	endX = prompt("Please enter the X coordinate of the top left corner of the farm (Including farmland)")
 	log("Target x value is " .. endX)
@@ -102,6 +176,8 @@ function harvestCrops()
 	endZ = prompt("Please enter the Z coordinate of the bottom right corner of your farm (Not including farmland)")
 	log("Target z value is " .. endZ)
 	endZ = tonumber(endZ) --Converts the players input to an interger
+end
+function harvestCrops()
 	sleep(500)
 	centre() --Centers the player on the block they are standing on 
 	sleep(500)
@@ -110,11 +186,22 @@ function harvestCrops()
 		checkInv()
 		if z == endZ then
 			chestDepot(chestX, chestZ, chestSizeRaw) --Deposits all remaining wheat
+			log("&2Done!")
 			break --Gets us out of the loop once we have reached the end of the farm 
 		end
 	end
 end
-
-giveDirections()
-getChestInfo()
-harvestCrops()
+--Main
+chooseCrop()
+file_exists("config.txt")
+if hasConfig == true then --If we have a config, we grab the data and start the script
+	log("&2You have a config! Beginning Script!")
+	readConfig("config.txt")
+	harvestCrops()
+else --If not we go through the process of making a config and getting data from the player
+	giveDirections()
+	getChestInfo()
+	getFarmInfo()
+	createConfig()
+	harvestCrops()
+end
