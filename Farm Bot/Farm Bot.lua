@@ -31,7 +31,7 @@ local seeds = nil
 function chooseCrop()
 	local cropChoice = nil
 	while true do
-		cropChoice = prompt("What are you harvesting? (w for wheat, c for carrots, p for potatoes, b for beets, and w for, nether wart)")
+		cropChoice = prompt("What are you harvesting? (w for wheat, c for carrots, p for potatoes, b for beets, and n for, nether wart)")
 		if cropChoice == "w" then
 			crop = wheat
 			seeds = wheatSeeds
@@ -48,7 +48,7 @@ function chooseCrop()
 			crop = beets
 			seeds = beetSeeds
 			break
-		elseif cropChoice == "w" then
+		elseif cropChoice == "n" then
 			crop = wart
 			seeds = wart
 			break
