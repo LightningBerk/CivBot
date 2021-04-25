@@ -1,6 +1,7 @@
 # CivBot
 A collection of AdvancedMarcros scripts made for botting and automation on Civ servers
 These script are free to use and distribute :)
+Currently supports versions 1.12.2 through 1.14.4
 # How to use
 You will need to install the Advanced macros mod found [here](https://www.curseforge.com/minecraft/mc-mods/advanced-macros/files/all)
 Once you have run your game once with the mod installed you will find a folder labeled "advancedMacros" in your mods folder. Inside this folder there will be another folder labeled "macros", put all .lua files in this folder. All you need to do now is configure your controls for the mod and start bottting some stuff!
