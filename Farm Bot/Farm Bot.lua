@@ -18,6 +18,13 @@ local breakX = 0 --For saving x position of player when leaving to deopt in a ch
 local breakZ = 0 --For saving z position of player when leaving to deopt in a chest
 local chestSizeRaw = 0 --Numerical value for chest size
 local hasConfig = false --For tracking weather or not the user has a config file
+local makeProfile = false --Tracking weather or not the user wants to save multiple config files for different farms
+local askProfile = nil --Tracks weather or not we need to get profile data from the player
+local profileName = "config" --Default profile name if the player does not want to make multiple profiles
+local profileChoice = nil --For storing what profile the player chose to load
+local ran = false --Weather or not this is the first time the player has run the script
+local lines = 0 --Number of lines in our profile storage profile
+local newProfile = false --Tracks weather or not the player wants to make a new profile assuming they have run the script before
 local wheat = "minecraft:wheat"
 local wheatSeeds = "minecraft:wheat_seeds"
 local carrots = "minecraft:carrot"
@@ -25,30 +32,72 @@ local potatoes = "minecraft:potato"
 local beets = "minecraft:beetroot"
 local beetSeeds = "minecraft:beetroot_seeds"
 local wart = "minecraft:nether_wart"
-local crop = nil
-local seeds = nil
+local crop = nil --For storing what crop was selected
+local seeds = nil --For storing what "seeds" are used for replanting based on crop selection
 --Defining functions
-function chooseCrop()
+function getLines() --Grabs the number of lines in our profile storage file 
+	lines = 0
+	for _ in io.lines'profiles.txt' do
+  	lines = lines + 1
+end
+end
+function chooseProfile(file) --Gives the player the ability to choose an existing profile they have made or to make a new one
+	local file = io.open(file, "r")
+	if lines ==  1 then --getLines is used here to make the menu conform to the amount of profiles we have, otherwise we will get an error from trying to read a nil value
+		profileChoice = prompt("Please choose a profile to load", "choice", file:read("*line"), "Create new profile")
+	elseif lines == 2 then
+		profileChoice = prompt("Please choose a profile to load", "choice", file:read("*line"), file:read("*line"), "Create new profile")
+	elseif lines == 3 then
+		profileChoice = prompt("Please choose a profile to load", "choice", file:read("*line"), file:read("*line"), file:read("*line"), "Create new profile")
+	elseif lines == 4 then
+		profileChoice = prompt("Please choose a profile to load", "choice", file:read("*line"), file:read("*line"), file:read("*line"), file:read("*line"), "Create new profile")
+	elseif lines == 5 then
+		profileChoice = prompt("Please choose a profile to load", "choice", file:read("*line"), file:read("*line"), file:read("*line"), file:read("*line"), file:read("*line"), "Create new profile")
+	elseif lines == 6 then
+		profileChoice = prompt("Please choose a profile to load", "choice", file:read("*line"), file:read("*line"), file:read("*line"), file:read("*line"), file:read("*line"), file:read("*line"), "Create new profile")
+	end
+	if profileChoice == "Create new profile" then
+		newProfile = true
+	end
+	file:close()
+end
+function saveProfileNames(name) --Saves the names of the profile we made to the profiles.txt file for use later
+	local file = io.open("profiles.txt", "a")
+	file:write(name, "\n")
+	file:close()
+end
+function askProfile() --Asks our player if they want to have multiple profiles saved. If not profileName defaults to config.txt
+	askProfile = prompt("Would you like to save this config as a profile so that you can have different configs for different farms?", "choice", "Yes", "No")
+	if askProfile == "Yes" then
+		makeProfile = true
+	elseif askProfile == "No" then
+		makeProfile = false
+	end
+	if makeProfile == true then
+		profileName = prompt("Please enter a name for the profile")
+	end
+end
+function chooseCrop() --Asks the player what crop they are harvesting so that the replanting and chest depositing will work correctly
 	local cropChoice = nil
 	while true do
-		cropChoice = prompt("What are you harvesting? (w for wheat, c for carrots, p for potatoes, b for beets, and n for, nether wart)")
-		if cropChoice == "w" then
+		cropChoice = prompt("What are you harvesting?", "choice", "Wheat", "Carrots", "Potatoes", "Beetroot", "Nether Wart")
+		if cropChoice == "Wheat" then
 			crop = wheat
 			seeds = wheatSeeds
 			break
-		elseif cropChoice == "c" then
+		elseif cropChoice == "Carrots" then
 			crop = carrots
 			seeds = carrots
 			break
-		elseif cropChoice == "p" then
+		elseif cropChoice == "Potatoes" then
 			crop = potatoes
 			seeds = potatoes
 			break
-		elseif cropChoice == "b" then
+		elseif cropChoice == "Beetroot" then
 			crop = beets
 			seeds = beetSeeds
 			break
-		elseif cropChoice == "n" then
+		elseif cropChoice == "Nether Wart" then
 			crop = wart
 			seeds = wart
 			break
@@ -58,18 +107,27 @@ function chooseCrop()
 		end
 	end	
 end
-function file_exists(file) --Checks to see if we have a config file 
+function file_exists(file) --Checks to see if a file we specify exists
 	local f = io.open(file, "rb")
   	if f then
   		hasConfig = true 
   		f:close() 
  	else
-  		log("No config file found. One will be created after data has been entered")
+  		log("&4File does not exist")
   	end
 end
-function createConfig() --Makes a config file assuming we dont have one
+function firstRun(file) --Checks to see if we have run the script before by checking to see if the file created on first run exists
+	local f = io.open(file, "rb")
+  	if f then
+  		ran = true 
+  		f:close() 
+ 	else
+  		log("&4This is your first time running the script")
+  	end
+end
+function createConfig(file) --Makes a config file assuming we dont have one
 	if hasConfig == false then
-		local file = io.open("config.txt", "w")
+		local file = io.open(file .. ".txt", "w")
 		file:write(endX, "\n")
 		file:write(endZ, "\n")
 		file:write(chestX, "\n")
@@ -77,7 +135,8 @@ function createConfig() --Makes a config file assuming we dont have one
 		file:write(chestSizeRaw, "\n")
 		file:close()
 		sleep(2000)
-		log("Config file created")
+		log("Config file with name " .. profileName .. ".txt" .. " created")
+		sleep(1000)
 	end
 end
 function readConfig(file) --Reads the config file and plugs the data into their respective variables
@@ -151,11 +210,11 @@ end
 function getChestInfo()
 	--Getting chest size from player
 	while true do 
-		chestSize = prompt("What size chest did you place? (s for single, d for double)")
-		if chestSize == "s" then
+		chestSize = prompt("What size chest did you place?", "choice", "Single Chest", "Double Chest")
+		if chestSize == "Single Chest" then
 			chestSizeRaw = 27
 			break
-		elseif chestSize == "d" then
+		elseif chestSize == "Double Chest" then
 			chestSizeRaw = 54
 			break
 		else --Failsafe in case player types an invalid selection
@@ -192,16 +251,44 @@ function harvestCrops()
 	end
 end
 --Main
-chooseCrop()
-file_exists("config.txt")
-if hasConfig == true then --If we have a config, we grab the data and start the script
-	log("&2You have a config! Beginning Script!")
-	readConfig("config.txt")
-	harvestCrops()
-else --If not we go through the process of making a config and getting data from the player
+firstRun("DO NOT DELETE.txt")
+if ran == true then
+	chooseCrop()
+	getLines()
+	io.close("profiles.txt")
+	chooseProfile("profiles.txt")
+	if newProfile == true then
+		giveDirections()
+		getChestInfo()
+		getFarmInfo()
+		askProfile()
+		createConfig(profileName)
+		if makeProfile == true then
+			saveProfileNames(profileName)
+		end
+		readConfig(profileName .. ".txt")
+		harvestCrops()	
+	elseif newProfile == false then
+		file_exists(profileChoice .. ".txt")
+		if hasConfig == true then --If we have a config, we grab the data and start the script
+			log("&2Config loaded! Beginning Script!")
+			readConfig(profileChoice .. ".txt")
+			harvestCrops()
+		else
+			log("&4File not found")
+		end
+	end
+elseif ran == false then --If not we go through the process of making a config and getting data from the player
+	local file = io.open("DO NOT DELETE.txt", "w")
+	file:write("run")
+	file:close()
 	giveDirections()
 	getChestInfo()
 	getFarmInfo()
-	createConfig()
+	askProfile()
+	createConfig(profileName)
+	if makeProfile == true then
+		saveProfileNames(profileName)
+	end
 	harvestCrops()
 end
