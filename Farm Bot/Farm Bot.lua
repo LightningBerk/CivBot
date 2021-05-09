@@ -18,7 +18,6 @@ local breakX = 0 --For saving x position of player when leaving to deopt in a ch
 local breakZ = 0 --For saving z position of player when leaving to deopt in a chest
 local chestSizeRaw = 0 --Numerical value for chest size
 local hasConfig = false --For tracking weather or not the user has a config file
-local makeProfile = false --Tracking weather or not the user wants to save multiple config files for different farms
 local askProfile = nil --Tracks weather or not we need to get profile data from the player
 local profileName = "config" --Default profile name if the player does not want to make multiple profiles
 local profileChoice = nil --For storing what profile the player chose to load
@@ -67,15 +66,7 @@ function saveProfileNames(name) --Saves the names of the profile we made to the 
 	file:close()
 end
 function askProfile() --Asks our player if they want to have multiple profiles saved. If not profileName defaults to config.txt
-	askProfile = prompt("Would you like to save this config as a profile so that you can have different configs for different farms?", "choice", "Yes", "No")
-	if askProfile == "Yes" then
-		makeProfile = true
-	elseif askProfile == "No" then
-		makeProfile = false
-	end
-	if makeProfile == true then
-		profileName = prompt("Please enter a name for the profile")
-	end
+	profileName = prompt("Please enter a name for the profile")
 end
 function chooseCrop() --Asks the player what crop they are harvesting so that the replanting and chest depositing will work correctly
 	local cropChoice = nil
@@ -251,23 +242,21 @@ function harvestCrops()
 	end
 end
 --Main
-firstRun("DO NOT DELETE.txt")
+firstRun("DO NOT DELETE.txt") --Detects if the script has been run before
 if ran == true then
-	chooseCrop()
-	getLines()
-	io.close("profiles.txt")
+	chooseCrop() --Asks the player what crop they are harvesting
+	getLines() --Reads how many profile names we have saved in the profiles.txt file
+	io.close("profiles.txt") --Closes the file
 	chooseProfile("profiles.txt")
-	if newProfile == true then
-		giveDirections()
-		getChestInfo()
-		getFarmInfo()
-		askProfile()
-		createConfig(profileName)
-		if makeProfile == true then
-			saveProfileNames(profileName)
-		end
-		readConfig(profileName .. ".txt")
-		harvestCrops()	
+	if newProfile == true then 
+		giveDirections() --Gives directions to the player for setting up their farm
+		getChestInfo() --Gets the coordinates of the chest from the player
+		getFarmInfo() --Gets coordinate data of the farm from the player
+		askProfile() --Determines if the player wants to save multiple profiles or not
+		createConfig(profileName) --Creates a profile with the given name (Defaults to config.txt if the player does not want to save multiple profiles)
+		saveProfileNames(profileName) --If the player does want to make multiple profiles then we create a file for saving the names of each profile
+		readConfig(profileName .. ".txt") --Gets data from whatever config we selected
+		harvestCrops() --Harvests the farm with the data from the file
 	elseif newProfile == false then
 		file_exists(profileChoice .. ".txt")
 		if hasConfig == true then --If we have a config, we grab the data and start the script
@@ -285,10 +274,9 @@ elseif ran == false then --If not we go through the process of making a config a
 	giveDirections()
 	getChestInfo()
 	getFarmInfo()
+	chooseCrop()
 	askProfile()
 	createConfig(profileName)
-	if makeProfile == true then
-		saveProfileNames(profileName)
-	end
+	saveProfileNames(profileName)
 	harvestCrops()
 end
